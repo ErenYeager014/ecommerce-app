@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model store {
+  id        String      @id @default(uuid())
+  name      String
+  userID    String
+  CreatedAT DateTime    @default(now())
+  UpdatedAt DateTime    @updatedAt
+  category  Category[]  @relation("storeToCategory")
+  billboard BillBoard[] @relation("StoreToBillBoard")
+  sizes     Size[]      @relation("storeTosize")
+  colors    Color[]     @relation("storeTocolor")
+  product   Product[]   @relation("storeToproducts")
+  order     Order[]     @relation("storeToOrder")
+}
+
+model BillBoard {
+  id         String     @id @default(uuid())
+  storeId    String
+  store      store      @relation("StoreToBillBoard", fields: [storeId], references: [id])
+  label      String
+  imageURL   String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
+
+  @@index([storeId])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  storeId     String
+  Store       store     @relation("storeToCategory", fields: [storeId], references: [id])
+  billboardid String
+  Billboard   BillBoard @relation(fields: [billboardid], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  name        String
+  products    Product[] @relation("categorytoproduct")
+
+  @@index([billboardid])
+  @@index([storeId])
+}
+
+model Size {
+  id        String    @id @default(uuid())
+  storeId   String
+  store     store     @relation("storeTosize", fields: [storeId], references: [id])
+  name      String
+  value     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Products  Product[]
+
+  @@index([storeId])
+}
+
+model Color {
+  id        String    @id @default(uuid())
+  storeId   String
+  store     store     @relation("storeTocolor", fields: [storeId], references: [id])
+  name      String
+  value     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Product   Product[]
+
+  @@index([storeId])
+}
+
+model Product {
+  id         String      @id @default(uuid())
+  storeId    String
+  store      store       @relation("storeToproducts", fields: [storeId], references: [id])
+  categoryId String
+  category   Category    @relation("categorytoproduct", fields: [categoryId], references: [id])
+  name       String
+  price      Decimal
+  isFeatured Boolean     @default(false)
+  isArchived Boolean     @default(false)
+  sizeId     String
+  sizes      Size        @relation(fields: [sizeId], references: [id])
+  colorId    String
+  colors     Color       @relation(fields: [colorId], references: [id])
+  Image      Image[]
+  OrderItem  OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([sizeId])
+  @@index([storeId])
+  @@index([colorId])
+  @@index([categoryId])
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  productId String
+  prooduct  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  storeId   String
+  store     store       @relation("storeToOrder", fields: [storeId], references: [id])
+  orderItem OrderItem[]
+  isPaid    Boolean     @default(false)
+  phone     String      @default("")
+  address   String      @default("")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @default(now())
+
+  @@index([storeId])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([orderId])
+}
